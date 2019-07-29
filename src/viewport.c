@@ -141,7 +141,7 @@ void imv_viewport_zoom(struct imv_viewport *view, const struct imv_image *image,
   const int wc_x = ww/2;
   const int wc_y = wh/2;
 
-  double delta_scale = 0.04 * ww * amount / image_width;
+  double delta_scale = 0.24 * prev_scale * ww * amount / image_width;
   view->scale += delta_scale;
 
   const double min_scale = 0.1;
