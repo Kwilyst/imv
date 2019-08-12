@@ -2,6 +2,19 @@
 #define IMV_NAVIGATOR_H
 
 #include <unistd.h>
+#include <time.h>
+
+struct imv_navigator {
+  int num_paths;
+  int cur_path;
+  char **paths;
+  time_t last_change;
+  time_t last_check;
+  int last_move_direction;
+  int changed;
+  int wrapped;
+  int poll_countdown;
+};
 
 /* Creates an instance of imv_navigator */
 struct imv_navigator *imv_navigator_create(void);

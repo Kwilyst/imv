@@ -38,8 +38,8 @@ enum scaling_mode {
 };
 
 enum upscaling_method {
-  UPSCALING_LINEAR,
   UPSCALING_NEAREST_NEIGHBOUR,
+  UPSCALING_LINEAR,
   UPSCALING_METHOD_COUNT,
 };
 
@@ -196,6 +196,7 @@ void command_next_frame(struct list *args, const char *argstr, void *data);
 void command_toggle_playing(struct list *args, const char *argstr, void *data);
 void command_set_scaling_mode(struct list *args, const char *argstr, void *data);
 void command_set_slideshow_duration(struct list *args, const char *argstr, void *data);
+void command_set_upscaling_method(struct list *args, const char *argstr, void *data);
 
 static bool setup_window(struct imv *imv);
 static void handle_event(struct imv *imv, SDL_Event *event);
@@ -367,6 +368,7 @@ struct imv *imv_create(void)
   imv->initial_height = 720;
   imv->need_redraw = true;
   imv->need_rescale = true;
+  imv->upscaling_method = UPSCALING_LINEAR;
   imv->scaling_mode = SCALING_FULL;
   imv->loop_input = true;
   imv->font_name = strdup("Monospace:24");
@@ -400,6 +402,7 @@ struct imv *imv_create(void)
   imv_command_register(imv->commands, "toggle_playing", &command_toggle_playing);
   imv_command_register(imv->commands, "scaling_mode", &command_set_scaling_mode);
   imv_command_register(imv->commands, "slideshow_duration", &command_set_slideshow_duration);
+  imv_command_register(imv->commands, "upscaling_method", &command_set_upscaling_method);
 
   add_bind(imv, "q", "quit");
   add_bind(imv, "<Left>", "select_rel -1");
@@ -431,6 +434,7 @@ struct imv *imv_create(void)
   add_bind(imv, "<Space>", "toggle_playing");
   add_bind(imv, "t", "slideshow_duration +1");
   add_bind(imv, "<Shift+t>", "slideshow_duration -1");
+  add_bind(imv, "z", "upscaling_method next");
 
   return imv;
 }
@@ -981,8 +985,14 @@ static bool setup_window(struct imv *imv)
   }
 
   /* use the appropriate resampling method */
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,
-    imv->upscaling_method == UPSCALING_LINEAR? "1" : "0");
+  switch(imv->upscaling_method) {
+    case UPSCALING_NEAREST_NEIGHBOUR:
+      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+      break;
+    case UPSCALING_LINEAR:
+      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+      break;
+  }
 
   /* allow fullscreen to be maintained even when focus is lost */
   SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS,
@@ -1641,6 +1651,44 @@ void command_set_slideshow_duration(struct list *args, const char *argstr, void 
 
     imv->need_redraw = true;
   }
+}
+
+void command_set_upscaling_method(struct list *args, const char *argstr, void *data)
+{
+  (void)args;
+  (void)argstr;
+  struct imv *imv = data;
+
+  if(args->len != 2) {
+    return;
+  }
+
+  const char *mode = args->items[1];
+
+  if(!strcmp(mode, "next")) {
+    imv->upscaling_method++;
+    imv->upscaling_method %= UPSCALING_METHOD_COUNT;
+  } else if(!strcmp(mode, "linear")) {
+    imv->upscaling_method = UPSCALING_LINEAR;
+  } else if(!strcmp(mode, "nearest_neighbour")) {
+    imv->upscaling_method = UPSCALING_NEAREST_NEIGHBOUR;
+  } else if(!strcmp(mode, "method_count")) {
+    imv->upscaling_method = UPSCALING_METHOD_COUNT;
+  } else {  
+    return;
+  }
+
+  switch(imv->upscaling_method) {
+    case UPSCALING_NEAREST_NEIGHBOUR:
+      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+      break;
+    case UPSCALING_LINEAR:
+      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+      break;
+  }
+
+  //reloading of the image
+  imv->navigator->changed = 1;
 }
 
 static void update_env_vars(struct imv *imv)

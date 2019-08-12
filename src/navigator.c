@@ -13,18 +13,6 @@
 #define PATH_MAX 4096
 #endif
 
-struct imv_navigator {
-  int num_paths;
-  int cur_path;
-  char **paths;
-  time_t last_change;
-  time_t last_check;
-  int last_move_direction;
-  int changed;
-  int wrapped;
-  int poll_countdown;
-};
-
 struct imv_navigator *imv_navigator_create(void)
 {
   struct imv_navigator *nav = malloc(sizeof *nav);
