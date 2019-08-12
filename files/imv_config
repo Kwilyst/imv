@@ -23,6 +23,7 @@ q = quit
 <RightSquareBracket> = select_rel 1
 gg = select_abs 0
 <Shift+g> = select_abs -1
+z = upscaling_method next
 
 # Panning
 j = pan 0 -50
